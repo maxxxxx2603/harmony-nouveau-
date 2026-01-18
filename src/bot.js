@@ -740,12 +740,41 @@ client.on('interactionCreate', async interaction => {
                 const fmt = new Intl.NumberFormat('fr-FR');
                 const targetMember = await interaction.guild.members.fetch(targetUser.id);
 
+                // Mettre à jour le channel si quota >= 20
+                const currentQuota = customs.quotas[userId].completed;
+                if (currentQuota >= 20) {
+                    try {
+                        // Trouver le channel de l'employé
+                        const baseUsername = targetMember.displayName.toLowerCase().replace(/\[\w+\]\s*/, '').replace(/\s+/g, '-');
+                        const channels = interaction.guild.channels.cache.filter(c => 
+                            c.type === ChannelType.GuildText && 
+                            c.name.includes(baseUsername)
+                        );
+
+                        let employeeChannel = null;
+                        for (const [id, channel] of channels) {
+                            if (channel.name.startsWith('🔴') || channel.name.startsWith('🟢')) {
+                                employeeChannel = channel;
+                                break;
+                            }
+                        }
+
+                        if (employeeChannel && employeeChannel.name.startsWith('🔴')) {
+                            const newName = employeeChannel.name.replace('🔴', '🟢');
+                            await employeeChannel.setName(newName);
+                            console.log(`✅ Channel mis à jour: ${newName}`);
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors de la mise à jour du channel:', error);
+                    }
+                }
+
                 const embed = new EmbedBuilder()
                     .setTitle('🔄 Mise à jour des données')
                     .setDescription(`Les données de ${targetUser} (${targetMember.displayName}) ont été mises à jour.`)
                     .addFields(
                         { name: 'Employé', value: `${targetUser}`, inline: false },
-                        { name: 'Quota', value: newQuota !== null ? `${oldQuota} + ${newQuota} = **${customs.quotas[userId].completed}** customisations` : 'Non modifié', inline: true },
+                        { name: 'Quota', value: newQuota !== null ? `${oldQuota} + ${newQuota} = **${customs.quotas[userId].completed}** customisations ${currentQuota >= 20 ? '🟢' : '🔴'}` : 'Non modifié', inline: true },
                         { name: 'Prix total', value: newPrixTotal !== null ? `${fmt.format(oldTotal)}$ + ${fmt.format(newPrixTotal)}$ = **${fmt.format(customs.quotas[userId].totalAmount)}$**` : 'Non modifié', inline: true }
                     )
                     .setColor('#3498DB')
