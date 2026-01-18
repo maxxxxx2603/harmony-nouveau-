@@ -2027,12 +2027,24 @@ client.on('messageCreate', async message => {
 
                 customs.customs.push(newCustom);
                 
-                // Incrémenter le quota
+                // Incrémenter le quota et le montant total
                 if (!customs.quotas) customs.quotas = {};
-                if (!customs.quotas[message.author.id]) customs.quotas[message.author.id] = 0;
-                customs.quotas[message.author.id]++;
+                if (!customs.quotas[message.author.id]) {
+                    customs.quotas[message.author.id] = { completed: 0, totalAmount: 0 };
+                }
                 
-                const currentQuota = customs.quotas[message.author.id];
+                // Gérer l'ancien format (simple nombre) si nécessaire
+                if (typeof customs.quotas[message.author.id] === 'number') {
+                    customs.quotas[message.author.id] = { 
+                        completed: customs.quotas[message.author.id], 
+                        totalAmount: 0 
+                    };
+                }
+                
+                customs.quotas[message.author.id].completed++;
+                customs.quotas[message.author.id].totalAmount += custom.montant;
+                
+                const currentQuota = customs.quotas[message.author.id].completed;
                 
                 saveCustoms(customs);
 
