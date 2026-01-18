@@ -722,12 +722,16 @@ client.on('interactionCreate', async interaction => {
                     customs.quotas[userId] = { completed: 0, totalAmount: 0 };
                 }
 
-                // Mettre à jour les valeurs
+                // Stocker les valeurs précédentes
+                const oldQuota = customs.quotas[userId].completed;
+                const oldTotal = customs.quotas[userId].totalAmount;
+
+                // Ajouter les valeurs (incrémenter au lieu de remplacer)
                 if (newQuota !== null) {
-                    customs.quotas[userId].completed = newQuota;
+                    customs.quotas[userId].completed += newQuota;
                 }
                 if (newPrixTotal !== null) {
-                    customs.quotas[userId].totalAmount = newPrixTotal;
+                    customs.quotas[userId].totalAmount += newPrixTotal;
                 }
 
                 // Sauvegarder les modifications
@@ -741,8 +745,8 @@ client.on('interactionCreate', async interaction => {
                     .setDescription(`Les données de ${targetUser} (${targetMember.displayName}) ont été mises à jour.`)
                     .addFields(
                         { name: 'Employé', value: `${targetUser}`, inline: false },
-                        { name: 'Nouveau quota', value: newQuota !== null ? `${customs.quotas[userId].completed} customisations` : 'Non modifié', inline: true },
-                        { name: 'Nouveau prix total', value: newPrixTotal !== null ? `${fmt.format(customs.quotas[userId].totalAmount)} $` : 'Non modifié', inline: true }
+                        { name: 'Quota', value: newQuota !== null ? `${oldQuota} + ${newQuota} = **${customs.quotas[userId].completed}** customisations` : 'Non modifié', inline: true },
+                        { name: 'Prix total', value: newPrixTotal !== null ? `${fmt.format(oldTotal)}$ + ${fmt.format(newPrixTotal)}$ = **${fmt.format(customs.quotas[userId].totalAmount)}$**` : 'Non modifié', inline: true }
                     )
                     .setColor('#3498DB')
                     .setTimestamp();
