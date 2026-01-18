@@ -1434,6 +1434,7 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.deferReply();
 
+                const customs = loadCustoms();
                 const payroll = loadPayroll();
                 const fmt = new Intl.NumberFormat('fr-FR');
 
@@ -1452,39 +1453,21 @@ client.on('interactionCreate', async interaction => {
                 let hasEmployees = false;
 
                 console.log('=== DEBUG /payes ===');
-                console.log('Employés dans payroll:', Object.keys(payroll.users || {}).length);
+                console.log('Employés dans customs.quotas:', Object.keys(customs.quotas || {}).length);
 
-                for (const [userId, payrollData] of Object.entries(payroll.users || {})) {
-                    console.log(`\nTraitement de l'employé ${userId} (${payrollData.userTag})`);
+                // Récupérer tous les employés (depuis customs.quotas et payroll.users)
+                const allEmployeeIds = new Set([
+                    ...Object.keys(customs.quotas || {}),
+                    ...Object.keys(payroll.users || {})
+                ]);
+
+                for (const userId of allEmployeeIds) {
+                    console.log(`\nTraitement de l'employé ${userId}`);
                     try {
                         const member = await interaction.guild.members.fetch(userId).catch(() => null);
                         
                         if (!member) {
                             console.log(`❌ Membre ${userId} non trouvé dans le serveur`);
-                            // Afficher quand même avec les données de payroll
-                            const quota = payrollData.quota || 0;
-                            const totalFactures = payrollData.total || 0;
-                            const percentage = 15; // Par défaut ER
-                            const payeFactures = Math.floor(totalFactures * (percentage / 100));
-                            const primeKits = 0; // Pas de kits à priori
-                            const payeTotal = payeFactures + primeKits;
-                            
-                            let statusQuota = '';
-                            let warning = '';
-                            
-                            if (quota < 20) {
-                                statusQuota = `❌ Quota: ${quota}/20 (minimum 20 requis)`;
-                                warning = '\n⚠️ **NE PAS PAYER** (quota < 20)';
-                            } else {
-                                statusQuota = quota >= 20 ? `✅ Quota: ${quota}/20` : `🟡 Quota: ${quota}/20`;
-                            }
-
-                            embed.addFields({
-                                name: `[?] ${payrollData.userTag} (membre non trouvé)`,
-                                value: `${statusQuota}\n**Factures:** ${fmt.format(totalFactures)}$ (${percentage}%) = ${fmt.format(payeFactures)}$\n**Kits:** 0 kits → Prime: 0$\n**💵 TOTAL: ${fmt.format(payeTotal)}$**${warning}`,
-                                inline: false
-                            });
-                            hasEmployees = true;
                             continue;
                         }
                         
@@ -1511,12 +1494,18 @@ client.on('interactionCreate', async interaction => {
                         
                         console.log(`Grade détecté: ${grade} (${percentage}%)`);
 
-                        // Calcul de la paye en utilisant les données de payroll
-                        const quota = payrollData.quota || 0;
-                        const totalFactures = payrollData.total || 0;
+                        // Utiliser les données de customs.quotas (mises à jour via /update)
+                        const quotaData = customs.quotas?.[userId] || { completed: 0, totalAmount: 0 };
+                        const quota = quotaData.completed || 0;
+                        const totalFactures = quotaData.totalAmount || 0;
+                        
+                        // Calcul des kits depuis payroll
+                        const kitsData = payroll.users?.[userId]?.kits || 0;
+                        const batches = Math.floor(kitsData / 20);
+                        const primeKits = batches * 100000; // 100 000$ par 20 kits
+                        
                         const payeFactures = Math.floor(totalFactures * (percentage / 100));
-                        const primeKits = 0; // Pas de kits à priori
-                        const payeTotal = payeFactures + primeKits;
+                        let payeTotal = payeFactures + primeKits;
                         
                         let statusQuota = '';
                         let warning = '';
@@ -1528,13 +1517,12 @@ client.on('interactionCreate', async interaction => {
                             payeTotal = 0;
                         } else {
                             // Quota atteint
-                            statusQuota = quota >= 20 ? `✅ Quota: ${quota}/20` : `🟡 Quota: ${quota}/20`;
-                            warning = '';
+                            statusQuota = `✅ Quota: ${quota}/20`;
                         }
 
                         embed.addFields({
-                            name: `${grade} ${payrollData.userTag}`,
-                            value: `${statusQuota}\n**Factures:** ${fmt.format(totalFactures)}$ (${percentage}%) = ${fmt.format(payeFactures)}$\n**Kits:** 0 kits → Prime: 0$\n**💵 TOTAL: ${fmt.format(payeTotal)}$**${warning}`,
+                            name: `${grade} ${member.displayName}`,
+                            value: `${statusQuota}\n**Factures:** ${fmt.format(totalFactures)}$ (${percentage}%) = ${fmt.format(payeFactures)}$\n**Kits:** ${kitsData} kits → Prime: ${fmt.format(primeKits)}$\n**💵 TOTAL: ${fmt.format(payeTotal)}$**${warning}`,
                             inline: false
                         });
 
