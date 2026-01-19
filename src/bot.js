@@ -366,9 +366,7 @@ client.on('interactionCreate', async interaction => {
             try {
                 // Vérifier que la commande est utilisée dans la catégorie employés
                 const EMPLOYEE_CATEGORY_ID = '1424376634554716322';
-                if (interaction.channel.parentId !== EMPLOYEE_CATEGORY_ID) {
-                    return interaction.reply({ content: '❌ Cette commande ne peut être utilisée que dans votre channel privé d\'employé.', ephemeral: true });
-                }
+                
 
                 const nombre = interaction.options.getInteger('nombre');
                 const facture = interaction.options.getAttachment('facture');
@@ -885,9 +883,7 @@ client.on('interactionCreate', async interaction => {
             try {
                 // Vérifier que la commande est utilisée dans la catégorie employés
                 const EMPLOYEE_CATEGORY_ID = '1424376634554716322';
-                if (interaction.channel.parentId !== EMPLOYEE_CATEGORY_ID) {
-                    return interaction.reply({ content: '❌ Cette commande ne peut être utilisée que dans votre channel privé d\'employé.', ephemeral: true });
-                }
+                
 
                 // Créer le menu déroulant pour le type de custom
                 const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
