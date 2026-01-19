@@ -732,6 +732,28 @@ client.on('interactionCreate', async interaction => {
                     customs.quotas[userId].totalAmount += newPrixTotal;
                 }
 
+                // Mettre à jour les factures existantes avec les nouvelles données
+                if (!customs.customs) {
+                    customs.customs = [];
+                }
+
+                // Créer des entrées de facture pour représenter la mise à jour
+                if (newQuota !== null && newQuota > 0) {
+                    // Ajouter des entrées pour chaque quota mis à jour
+                    for (let i = 0; i < newQuota; i++) {
+                        customs.customs.push({
+                            id: Date.now() + i,
+                            userId: userId,
+                            userTag: targetUser.tag,
+                            type: 'update',
+                            typeLabel: '🔄 Mise à jour',
+                            montant: Math.floor((newPrixTotal || 0) / Math.max(newQuota, 1)),
+                            imageUrl: '',
+                            timestamp: Date.now()
+                        });
+                    }
+                }
+
                 // Sauvegarder les modifications
                 saveCustoms(customs);
 
@@ -773,13 +795,14 @@ client.on('interactionCreate', async interaction => {
                     .addFields(
                         { name: 'Employé', value: `${targetUser}`, inline: false },
                         { name: 'Quota', value: newQuota !== null ? `${oldQuota} + ${newQuota} = **${customs.quotas[userId].completed}** customisations ${currentQuota >= 20 ? '🟢' : '🔴'}` : 'Non modifié', inline: true },
-                        { name: 'Prix total', value: newPrixTotal !== null ? `${fmt.format(oldTotal)}$ + ${fmt.format(newPrixTotal)}$ = **${fmt.format(customs.quotas[userId].totalAmount)}$**` : 'Non modifié', inline: true }
+                        { name: 'Prix total', value: newPrixTotal !== null ? `${fmt.format(oldTotal)}$ + ${fmt.format(newPrixTotal)}$ = **${fmt.format(customs.quotas[userId].totalAmount)}$**` : 'Non modifié', inline: true },
+                        { name: '📊 Factures mises à jour', value: `Les données ont été ajoutées dans /facture`, inline: false }
                     )
                     .setColor('#3498DB')
                     .setTimestamp();
 
                 await interaction.editReply({ embeds: [embed] });
-                console.log(`✅ Mise à jour: ${targetUser.tag} - Quota: ${customs.quotas[userId].completed}, Prix total: ${customs.quotas[userId].totalAmount}`);
+                console.log(`✅ Mise à jour: ${targetUser.tag} - Quota: ${customs.quotas[userId].completed}, Prix total: ${customs.quotas[userId].totalAmount}, Factures mises à jour`);
             } catch (error) {
                 console.error('❌ Erreur /update:', error);
                 if (interaction.deferred) {
