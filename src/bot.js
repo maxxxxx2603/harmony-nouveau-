@@ -1840,7 +1840,8 @@ client.on('interactionCreate', async interaction => {
             await interaction.deferReply({ ephemeral: true });
             
             const member = await interaction.guild.members.fetch(userId);
-            const role = await interaction.guild.roles.fetch(ROLE_ID);
+            const INTERVIEW_WAITING_ROLE_ID = '1273007405046693890';
+            const role = await interaction.guild.roles.fetch(INTERVIEW_WAITING_ROLE_ID);
             
             // Ajouter le rôle
             await member.roles.add(role);
