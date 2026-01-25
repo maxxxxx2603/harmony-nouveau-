@@ -185,7 +185,7 @@ async function registerCommands() {
             },
             {
                 name: 'up',
-                description: 'Monter un employé de grade (AMT → M → ME)',
+                description: 'Monter un employé de grade (AMT → M → ME → CA)',
                 options: [
                     {
                         name: 'employe',
@@ -591,12 +591,28 @@ client.on('interactionCreate', async interaction => {
                 const targetUser = interaction.options.getUser('employe');
                 const targetMember = await interaction.guild.members.fetch(targetUser.id);
 
-                // Vérifier si l'employé a déjà le rôle E (1351702387198394429)
-                const hasRoleE = targetMember.roles.cache.has('1351702387198394429');
+                // Vérifier les rôles pour déterminer la promotion
+                const hasRoleME = targetMember.roles.cache.has('1288186576513269843');
+                const hasRoleM = targetMember.roles.cache.has('1351702387198394429');
 
                 let newNickname, newChannelName, gradeText;
 
-                if (hasRoleE) {
+                if (hasRoleME) {
+                    // Promotion ME → CA
+                    const roleToRemove = await interaction.guild.roles.fetch('1288186576513269843');
+                    const roleToAdd = await interaction.guild.roles.fetch('1413933638281859152');
+                    
+                    if (roleToRemove) await targetMember.roles.remove(roleToRemove);
+                    if (roleToAdd) await targetMember.roles.add(roleToAdd);
+
+                    // Renommer de [ME] à [CA]
+                    newNickname = targetMember.displayName.replace('[ME]', '[CA]');
+                    if (!targetMember.displayName.includes('[ME]')) {
+                        newNickname = `[CA] ${targetMember.displayName.replace(/^\[\w+\]\s*/, '')}`;
+                    }
+                    
+                    gradeText = 'CA';
+                } else if (hasRoleM) {
                     // Promotion M → ME
                     const roleToRemove = await interaction.guild.roles.fetch('1351702387198394429');
                     const roleToAdd = await interaction.guild.roles.fetch('1288186576513269843');
@@ -650,18 +666,25 @@ client.on('interactionCreate', async interaction => {
                 }
 
                 if (employeeChannel) {
-                    // Déplacer le channel dans les catégories 1424376889476382910 puis 1424377064248840285
+                    // Déplacer le channel selon le grade
                     try {
-                        // Première catégorie
-                        await employeeChannel.setParent('1424376889476382910');
-                        await employeeChannel.setPosition(0);
-                        
-                        // Attendre un court instant pour éviter les rate limits
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        
-                        // Deuxième catégorie
-                        await employeeChannel.setParent('1424377064248840285');
-                        await employeeChannel.setPosition(0);
+                        if (gradeText === 'CA') {
+                            // Pour CA: déplacer dans 1424377247317491782
+                            await employeeChannel.setParent('1424377247317491782');
+                            await employeeChannel.setPosition(0);
+                        } else {
+                            // Pour M et ME: déplacer dans les catégories 1424376889476382910 puis 1424377064248840285
+                            // Première catégorie
+                            await employeeChannel.setParent('1424376889476382910');
+                            await employeeChannel.setPosition(0);
+                            
+                            // Attendre un court instant pour éviter les rate limits
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            
+                            // Deuxième catégorie
+                            await employeeChannel.setParent('1424377064248840285');
+                            await employeeChannel.setPosition(0);
+                        }
                     } catch (moveError) {
                         console.warn(`⚠️ Erreur lors du déplacement du channel: ${moveError.message}`);
                     }
@@ -869,10 +892,10 @@ client.on('interactionCreate', async interaction => {
                     await targetMember.roles.add(keepRole);
                 }
 
-                // Retirer le préfixe [AMT], [M], [ME] du pseudo
+                // Retirer le préfixe [AMT], [M], [ME], [CA] du pseudo
                 try {
                     const currentNickname = targetMember.displayName;
-                    const newNickname = currentNickname.replace(/^\[(AMT|M|ME)\]\s*/, '');
+                    const newNickname = currentNickname.replace(/^\[(AMT|M|ME|CA)\]\s*/, '');
                     if (newNickname !== currentNickname) {
                         await targetMember.setNickname(newNickname);
                     }
@@ -996,7 +1019,7 @@ client.on('interactionCreate', async interaction => {
                         },
                         {
                             name: '💵 Pourcentages par Grade',
-                            value: '• **[AMT]** Apprenti Mécano Test : **15%** des factures\n• **[M]** Mécanicien : **20%** des factures\n• **[ME]** Mécanicien Expert : **25%** des factures',
+                            value: '• **[AMT]** Apprenti Mécano Test : **30%** des factures\n• **[M]** Mécanicien : **35%** des factures\n• **[ME]** Mécanicien Expérimenté : **40%** des factures\n• **[CA]** Chef d\'Atelier : **45%** des factures',
                             inline: false
                         },
                         {
@@ -1102,7 +1125,7 @@ client.on('interactionCreate', async interaction => {
                         },
                         {
                             name: '⬆️ /up - Promotion',
-                            value: 'Promeut un employé automatiquement : AMT → M → ME (rôles + channel).',
+                            value: 'Promeut un employé automatiquement : AMT → M → ME → CA (rôles + channel).',
                             inline: true
                         },
                         {
@@ -1122,7 +1145,7 @@ client.on('interactionCreate', async interaction => {
                         },
                         {
                             name: '💰 /payes - Calcul des payes',
-                            value: 'Affiche les payes de tous les employés :\n• **[AMT]** : 15% factures + primes\n• **[M]** : 20% factures + primes\n• **[ME]** : 25% factures + primes\n\n⚠️ Quota < 20 = 0$ de paye',
+                            value: 'Affiche les payes de tous les employés :\n• **[AMT]** : 30% factures + primes\n• **[M]** : 35% factures + primes\n• **[ME]** : 40% factures + primes\n• **[CA]** : 45% factures + primes\n\n⚠️ Quota < 20 = 0$ de paye',
                             inline: true
                         },
                         {
@@ -1160,7 +1183,7 @@ client.on('interactionCreate', async interaction => {
                         },
                         {
                             name: '💸 Système de Payes',
-                            value: '• **[AMT]** : 15% des factures\n• **[M]** : 20% des factures\n• **[ME]** : 25% des factures\n• **Prime kits** : 20 kits = +100 000$\n• Si quota < 20 : Aucune paye',
+                            value: '• **[AMT]** : 30% des factures\n• **[M]** : 35% des factures\n• **[ME]** : 40% des factures\n• **[CA]** : 45% des factures\n• **Prime kits** : 20 kits = +100 000$\n• Si quota < 20 : Aucune paye',
                             inline: false
                         }
                     )
@@ -1491,9 +1514,10 @@ client.on('interactionCreate', async interaction => {
                 const fmt = new Intl.NumberFormat('fr-FR');
 
                 // Rôles et pourcentages
-                const ROLE_AMT = '1288186552249225380'; // 15%
-                const ROLE_M = '1351702387198394429';  // 20%
-                const ROLE_ME = '1288186576513269843'; // 25%
+                const ROLE_AMT = '1288186552249225380'; // 30%
+                const ROLE_M = '1351702387198394429';  // 35%
+                const ROLE_ME = '1288186576513269843'; // 40%
+                const ROLE_CA = '1413933638281859152'; // 45%
 
                 // Calculer les payes pour chaque employé
                 const embed = new EmbedBuilder()
@@ -1529,14 +1553,17 @@ client.on('interactionCreate', async interaction => {
                         let grade = 'Inconnu';
 
                         // Déterminer le pourcentage selon le rôle
-                        if (member.roles.cache.has(ROLE_ME)) {
-                            percentage = 25;
+                        if (member.roles.cache.has(ROLE_CA)) {
+                            percentage = 45;
+                            grade = '[CA]';
+                        } else if (member.roles.cache.has(ROLE_ME)) {
+                            percentage = 40;
                             grade = '[ME]';
                         } else if (member.roles.cache.has(ROLE_M)) {
-                            percentage = 20;
+                            percentage = 35;
                             grade = '[M]';
                         } else if (member.roles.cache.has(ROLE_AMT)) {
-                            percentage = 15;
+                            percentage = 30;
                             grade = '[AMT]';
                         } else {
                             // Pas un employé, on skip
@@ -1618,40 +1645,80 @@ client.on('interactionCreate', async interaction => {
                 const emptyCustoms = { customs: [], quotas: {} };
                 saveCustoms(emptyCustoms);
 
-                // Remettre tous les channels employés avec 🔴
-                const EMPLOYEE_CATEGORY_ID = '1424376634554716322';
+                // Remettre tous les channels employés avec 🔴 dans TOUTES les catégories
+                const EMPLOYEE_CATEGORIES = [
+                    '1462859143630164119',
+                    '1424376634554716322',
+                    '1424376889476382910',
+                    '1424377064248840285',
+                    '1424377247317491782',
+                    '1424377119378636890',
+                    '1458843403080040653'
+                ];
                 let channelsUpdated = 0;
                 
                 try {
-                    const category = await interaction.guild.channels.fetch(EMPLOYEE_CATEGORY_ID);
-                    if (category && category.type === ChannelType.GuildCategory) {
-                        const employeeChannels = interaction.guild.channels.cache.filter(
-                            c => c.parentId === EMPLOYEE_CATEGORY_ID && c.type === ChannelType.GuildText
-                        );
-                        
-                        for (const [id, channel] of employeeChannels) {
-                            if (channel.name.startsWith('🟢')) {
-                                const newName = channel.name.replace('🟢', '🔴');
-                                await channel.setName(newName);
-                                channelsUpdated++;
-                                console.log(`✅ Channel réinitialisé: ${newName}`);
+                    for (const categoryId of EMPLOYEE_CATEGORIES) {
+                        try {
+                            const category = await interaction.guild.channels.fetch(categoryId);
+                            if (category && category.type === ChannelType.GuildCategory) {
+                                const employeeChannels = interaction.guild.channels.cache.filter(
+                                    c => c.parentId === categoryId && c.type === ChannelType.GuildText
+                                );
+                                
+                                for (const [id, channel] of employeeChannels) {
+                                    if (channel.name.startsWith('🟢')) {
+                                        const newName = channel.name.replace('🟢', '🔴');
+                                        await channel.setName(newName);
+                                        channelsUpdated++;
+                                        console.log(`✅ Channel réinitialisé: ${newName}`);
+                                    }
+                                }
                             }
+                        } catch (catError) {
+                            console.error(`⚠️ Erreur pour la catégorie ${categoryId}:`, catError);
                         }
                     }
                 } catch (channelError) {
                     console.error('⚠️ Erreur lors de la mise à jour des channels:', channelError);
                 }
 
+                // Envoyer le message "# nouvelle semaine, on repart de 0 !" dans toutes les catégories
+                let messagesSent = 0;
+                try {
+                    for (const categoryId of EMPLOYEE_CATEGORIES) {
+                        try {
+                            const category = await interaction.guild.channels.fetch(categoryId);
+                            if (category && category.type === ChannelType.GuildCategory) {
+                                const employeeChannels = interaction.guild.channels.cache.filter(
+                                    c => c.parentId === categoryId && c.type === ChannelType.GuildText
+                                );
+                                
+                                for (const [id, channel] of employeeChannels) {
+                                    await channel.send('# nouvelle semaine, on repart de 0 !');
+                                    messagesSent++;
+                                    console.log(`✅ Message envoyé dans: ${channel.name}`);
+                                }
+                            }
+                        } catch (msgError) {
+                            console.error(`⚠️ Erreur lors de l'envoi du message dans la catégorie ${categoryId}:`, msgError);
+                        }
+                    }
+                } catch (messageError) {
+                    console.error('⚠️ Erreur lors de l\'envoi des messages:', messageError);
+                }
+
                 const embed = new EmbedBuilder()
                     .setTitle('🔄 Réinitialisation complète')
-                    .setDescription('Toutes les données ont été réinitialisées avec succès !')
+                    .setDescription('# Nouvelle semaine, on repart de 0 !\n\nToutes les données ont été réinitialisées avec succès !')
                     .addFields(
                         { name: '📦 Kits', value: 'Tous les kits ont été supprimés', inline: true },
                         { name: '🛠️ Customs', value: 'Toutes les customisations ont été supprimées', inline: true },
                         { name: '📊 Factures', value: 'Toutes les factures ont été supprimées', inline: true },
                         { name: '🎯 Quotas', value: 'Tous les quotas ont été réinitialisés', inline: true },
                         { name: '💰 Payes', value: 'Toutes les données de paye ont été effacées', inline: true },
-                        { name: '🔴 Channels', value: `${channelsUpdated} channel(s) remis à zéro (🔴)`, inline: true }
+                        { name: '🔴 Channels', value: `${channelsUpdated} channel(s) remis à zéro (🔴)`, inline: true },
+                        { name: '📢 Messages', value: `${messagesSent} message(s) envoyé(s)`, inline: true }
                     )
                     .setColor('#E74C3C')
                     .setTimestamp();
