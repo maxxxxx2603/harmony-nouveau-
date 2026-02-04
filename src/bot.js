@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder } = require('discord.js');
+﻿const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -1888,16 +1888,16 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.editReply({ content: ` ${membersProcessed} membres traités\n ${channelsDeleted} channels supprimés\n ${channelsCleared} channels nettoyés\n Envoi du message de présentation...` });
 
-                // 4. Envoyer le message de présentation dans le premier channel texte disponible
-                const firstTextChannel = channels.find(ch => ch.type === ChannelType.GuildText && !ch.deleted);
-                if (firstTextChannel) {
+                // 4. Envoyer le message de présentation dans le channel spécifique
+                const presentationChannel = await guild.channels.fetch('1413285179702906920');
+                if (presentationChannel) {
                     const embed = new EmbedBuilder()
                         .setTitle(' Harmony Bot')
                         .setDescription(`Bonjour ! Je suis **Harmony**, le bot de gestion de ce serveur.\n\nLe serveur a été entièrement réinitialisé.\n\n**Contact:**\nSi vous souhaitez plus d'informations, contactez <@699589324705890334>`)
                         .setColor('#5865F2')
                         .setTimestamp();
 
-                    await firstTextChannel.send({ embeds: [embed] });
+                    await presentationChannel.send({ content: '@everyone', embeds: [embed] });
                 }
 
                 await interaction.editReply({ content: ` **Réinitialisation terminée !**\n\n **Statistiques:**\n- ${membersProcessed} membres traités\n- ${rolesRemoved} rôles retirés\n- ${nicknamesReset} pseudos réinitialisés\n- ${channelsDeleted} channels d'employés supprimés\n- ${channelsCleared} channels nettoyés\n\n Message de présentation envoyé.` });
