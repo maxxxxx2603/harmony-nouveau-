@@ -270,9 +270,13 @@ async function registerCommands() {
                         required: false
                     }
                 ]
+            },
+            {
+                name: 'byebye',
+                description: 'Réinitialiser complètement le serveur (admin only)'
             }
         ]);
-        console.log('✅ Commandes /rc, /kit, /total-kit, /add, /up, /virer, /custom, /facture, /reset, /payes, /remuneration, /info, /reglement, /setdata, /aideemployer, /clearaide et /update enregistrées');
+        console.log(' Commandes /rc, /kit, /total-kit, /add, /up, /virer, /custom, /facture, /reset, /payes, /remuneration, /info, /reglement, /setdata, /aideemployer, /clearaide, /update et /byebye enregistrées');
     } catch (error) {
         console.error('❌ Erreur lors de l\'enregistrement des commandes:', error);
     }
@@ -1790,6 +1794,125 @@ client.on('interactionCreate', async interaction => {
                 }
             }
         }
+
+        // Slash command /byebye
+        if (interaction.commandName === 'byebye') {
+            try {
+                // Permission admin uniquement
+                const isAdmin = interaction.memberPermissions && interaction.memberPermissions.has(PermissionFlagsBits.Administrator);
+                if (!isAdmin) {
+                    return interaction.reply({ content: ' Seuls les administrateurs peuvent utiliser cette commande.', ephemeral: true });
+                }
+
+                await interaction.deferReply({ ephemeral: true });
+
+                const guild = interaction.guild;
+                let membersProcessed = 0;
+                let rolesRemoved = 0;
+                let nicknamesReset = 0;
+                let channelsDeleted = 0;
+                let channelsCleared = 0;
+
+                await interaction.editReply({ content: ' Début de la réinitialisation du serveur...' });
+
+                // 1. Retirer tous les rôles de tous les membres
+                const members = await guild.members.fetch();
+                for (const [memberId, member] of members) {
+                    try {
+                        if (member.user.bot) continue; // Ignorer les bots
+                        
+                        const rolesToRemove = member.roles.cache.filter(role => role.id !== guild.id); // Tous sauf @everyone
+                        if (rolesToRemove.size > 0) {
+                            await member.roles.remove(rolesToRemove);
+                            rolesRemoved += rolesToRemove.size;
+                        }
+                        
+                        // Réinitialiser le pseudo
+                        if (member.nickname) {
+                            await member.setNickname(null);
+                            nicknamesReset++;
+                        }
+                        
+                        membersProcessed++;
+                    } catch (error) {
+                        console.error(`Erreur pour ${member.user.tag}:`, error);
+                    }
+                }
+
+                await interaction.editReply({ content: ` ${membersProcessed} membres traités (${rolesRemoved} rôles retirés, ${nicknamesReset} pseudos réinitialisés)\n Suppression des channels d'employés...` });
+
+                // 2. Supprimer tous les channels des catégories d'employés
+                const EMPLOYEE_CATEGORY_ID = '1424376634554716322';
+                const channels = await guild.channels.fetch();
+                
+                for (const [channelId, channel] of channels) {
+                    try {
+                        if (channel.parentId === EMPLOYEE_CATEGORY_ID) {
+                            await channel.delete();
+                            channelsDeleted++;
+                        }
+                    } catch (error) {
+                        console.error(`Erreur suppression channel ${channel.name}:`, error);
+                    }
+                }
+
+                await interaction.editReply({ content: ` ${membersProcessed} membres traités\n ${channelsDeleted} channels d'employés supprimés\n Nettoyage des autres channels...` });
+
+                // 3. Vider tous les autres channels texte
+                for (const [channelId, channel] of channels) {
+                    try {
+                        if (channel.type === ChannelType.GuildText && !channel.deleted && channel.parentId !== EMPLOYEE_CATEGORY_ID) {
+                            // Supprimer tous les messages
+                            let deleted = 0;
+                            let fetched;
+                            do {
+                                fetched = await channel.messages.fetch({ limit: 100 });
+                                if (fetched.size > 0) {
+                                    await channel.bulkDelete(fetched, true).catch(() => {
+                                        // Si bulkDelete échoue (messages trop anciens), supprimer un par un
+                                        fetched.forEach(msg => msg.delete().catch(() => {}));
+                                    });
+                                    deleted += fetched.size;
+                                }
+                            } while (fetched.size >= 100);
+                            
+                            if (deleted > 0) {
+                                channelsCleared++;
+                                console.log(`Channel ${channel.name}: ${deleted} messages supprimés`);
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Erreur nettoyage channel ${channel.name}:`, error);
+                    }
+                }
+
+                await interaction.editReply({ content: ` ${membersProcessed} membres traités\n ${channelsDeleted} channels supprimés\n ${channelsCleared} channels nettoyés\n Envoi du message de présentation...` });
+
+                // 4. Envoyer le message de présentation dans le premier channel texte disponible
+                const firstTextChannel = channels.find(ch => ch.type === ChannelType.GuildText && !ch.deleted);
+                if (firstTextChannel) {
+                    const embed = new EmbedBuilder()
+                        .setTitle(' Harmony Bot')
+                        .setDescription(`Bonjour ! Je suis **Harmony**, le bot de gestion de ce serveur.\n\nLe serveur a été entièrement réinitialisé.\n\n**Contact:**\nSi vous souhaitez plus d'informations, contactez <@699589324705890334>`)
+                        .setColor('#5865F2')
+                        .setTimestamp();
+
+                    await firstTextChannel.send({ embeds: [embed] });
+                }
+
+                await interaction.editReply({ content: ` **Réinitialisation terminée !**\n\n **Statistiques:**\n- ${membersProcessed} membres traités\n- ${rolesRemoved} rôles retirés\n- ${nicknamesReset} pseudos réinitialisés\n- ${channelsDeleted} channels d'employés supprimés\n- ${channelsCleared} channels nettoyés\n\n Message de présentation envoyé.` });
+                
+                console.log(' Commande /byebye exécutée - Serveur réinitialisé');
+            } catch (error) {
+                console.error(' Erreur /byebye:', error);
+                if (interaction.deferred) {
+                    await interaction.editReply({ content: ` Une erreur est survenue: ${error.message}` });
+                } else if (!interaction.replied) {
+                    await interaction.reply({ content: ' Une erreur est survenue.', ephemeral: true });
+                }
+            }
+        }
+
         return; // ne pas traiter comme bouton
     }
 
