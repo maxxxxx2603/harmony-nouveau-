@@ -1809,13 +1809,14 @@ client.on('interactionCreate', async interaction => {
                 const guild = interaction.guild;
                 let membersProcessed = 0;
                 let rolesRemoved = 0;
+                let rolesAdded = 0;
                 let nicknamesReset = 0;
                 let channelsDeleted = 0;
                 let channelsCleared = 0;
 
                 await interaction.editReply({ content: ' Début de la réinitialisation du serveur...' });
 
-                // 1. Retirer tous les rôles de tous les membres
+                // 1. Retirer tous les rôles et ajouter le rôle citoyen
                 const members = await guild.members.fetch();
                 for (const [memberId, member] of members) {
                     try {
@@ -1825,6 +1826,12 @@ client.on('interactionCreate', async interaction => {
                         if (rolesToRemove.size > 0) {
                             await member.roles.remove(rolesToRemove);
                             rolesRemoved += rolesToRemove.size;
+                        
+                        // Ajouter le rôle citoyen
+                        await member.roles.add(CITIZEN_ROLE_ID);
+                        
+                        // Ajouter le rôle citoyen
+                        await member.roles.add(CITIZEN_ROLE_ID);
                         }
                         
                         // Réinitialiser le pseudo
@@ -1839,7 +1846,7 @@ client.on('interactionCreate', async interaction => {
                     }
                 }
 
-                await interaction.editReply({ content: ` ${membersProcessed} membres traités (${rolesRemoved} rôles retirés, ${nicknamesReset} pseudos réinitialisés)\n Suppression des channels d'employés...` });
+                await interaction.editReply({ content: ` ${membersProcessed} membres traités (${rolesRemoved} rôles retirés, ${rolesAdded} rôles citoyens ajoutés, ${nicknamesReset} pseudos réinitialisés)\n Suppression des channels d'employés...` });
 
                 // 2. Supprimer tous les channels des catégories d'employés
                 const EMPLOYEE_CATEGORY_ID = '1424376634554716322';
@@ -1861,7 +1868,7 @@ client.on('interactionCreate', async interaction => {
                 // 3. Vider tous les autres channels texte
                 for (const [channelId, channel] of channels) {
                     try {
-                        if (channel.type === ChannelType.GuildText && !channel.deleted && channel.parentId !== EMPLOYEE_CATEGORY_ID) {
+                        if (channel.type === ChannelType.GuildText && !channel.deleted) {
                             // Supprimer tous les messages
                             let deleted = 0;
                             let fetched;
@@ -1889,7 +1896,7 @@ client.on('interactionCreate', async interaction => {
                 await interaction.editReply({ content: ` ${membersProcessed} membres traités\n ${channelsDeleted} channels supprimés\n ${channelsCleared} channels nettoyés\n Envoi du message de présentation...` });
 
                 // 4. Envoyer le message de présentation dans le channel spécifique
-                const presentationChannel = await guild.channels.fetch('1413285179702906920');
+                const presentationChannel = await guild.channels.fetch('1468723765155205285');
                 if (presentationChannel) {
                     const embed = new EmbedBuilder()
                         .setTitle(' Harmony Bot')
@@ -1900,7 +1907,7 @@ client.on('interactionCreate', async interaction => {
                     await presentationChannel.send({ content: '@everyone', embeds: [embed] });
                 }
 
-                await interaction.editReply({ content: ` **Réinitialisation terminée !**\n\n **Statistiques:**\n- ${membersProcessed} membres traités\n- ${rolesRemoved} rôles retirés\n- ${nicknamesReset} pseudos réinitialisés\n- ${channelsDeleted} channels d'employés supprimés\n- ${channelsCleared} channels nettoyés\n\n Message de présentation envoyé.` });
+                await interaction.editReply({ content: ` **Réinitialisation terminée !**\n\n **Statistiques:**\n- ${membersProcessed} membres traités\n- ${rolesRemoved} rôles retirés\n- ${rolesAdded} rôles citoyens ajoutés\n- ${nicknamesReset} pseudos réinitialisés\n- ${channelsDeleted} channels d'employés supprimés\n- ${channelsCleared} channels nettoyés\n\n Message de présentation envoyé.` });
                 
                 console.log(' Commande /byebye exécutée - Serveur réinitialisé');
             } catch (error) {
