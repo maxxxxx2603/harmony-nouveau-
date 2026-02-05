@@ -1863,9 +1863,9 @@ client.on('interactionCreate', async interaction => {
                     }
                 }
 
-                await interaction.editReply({ content: ` ${membersProcessed} membres traités\n ${channelsDeleted} channels d'employés supprimés\n Nettoyage des autres channels...` });
+                await interaction.editReply({ content: ` ${membersProcessed} membres traités\n ${channelsDeleted} channels d'employés supprimés\n Nettoyage de tous les channels...` });
 
-                // 3. Vider tous les autres channels texte
+                // 3. Vider TOUS les channels texte (supprimer tous les messages)
                 for (const [channelId, channel] of channels) {
                     try {
                         if (channel.type === ChannelType.GuildText && !channel.deleted) {
