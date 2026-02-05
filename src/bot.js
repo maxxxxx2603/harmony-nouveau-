@@ -1865,35 +1865,7 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.editReply({ content: ` ${membersProcessed} membres traités\n ${channelsDeleted} channels d'employés supprimés\n Nettoyage de tous les channels...` });
 
-                // 3. Vider TOUS les channels texte (supprimer tous les messages)
-                for (const [channelId, channel] of channels) {
-                    try {
-                        if (channel.type === ChannelType.GuildText && !channel.deleted) {
-                            // Supprimer tous les messages
-                            let deleted = 0;
-                            let fetched;
-                            do {
-                                fetched = await channel.messages.fetch({ limit: 100 });
-                                if (fetched.size > 0) {
-                                    await channel.bulkDelete(fetched, true).catch(() => {
-                                        // Si bulkDelete échoue (messages trop anciens), supprimer un par un
-                                        fetched.forEach(msg => msg.delete().catch(() => {}));
-                                    });
-                                    deleted += fetched.size;
-                                }
-                            } while (fetched.size >= 100);
-                            
-                            if (deleted > 0) {
-                                channelsCleared++;
-                                console.log(`Channel ${channel.name}: ${deleted} messages supprimés`);
-                            }
-                        }
-                    } catch (error) {
-                        console.error(`Erreur nettoyage channel ${channel.name}:`, error);
-                    }
-                }
-
-                await interaction.editReply({ content: ` ${membersProcessed} membres traités\n ${channelsDeleted} channels supprimés\n ${channelsCleared} channels nettoyés\n Envoi du message de présentation...` });
+                // 3. Nettoyage des channels - SAUTÉ
 
                 // 4. Envoyer le message de présentation dans le channel spécifique
                 const presentationChannel = await guild.channels.fetch('1468723765155205285');
