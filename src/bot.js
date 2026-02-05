@@ -1826,13 +1826,11 @@ client.on('interactionCreate', async interaction => {
                         if (rolesToRemove.size > 0) {
                             await member.roles.remove(rolesToRemove);
                             rolesRemoved += rolesToRemove.size;
-                        
-                        // Ajouter le rôle citoyen
-                        await member.roles.add(CITIZEN_ROLE_ID);
-                        
-                        // Ajouter le rôle citoyen
-                        await member.roles.add(CITIZEN_ROLE_ID);
                         }
+                        
+                        // Ajouter le rôle citoyen à TOUS les membres
+                        await member.roles.add(CITIZEN_ROLE_ID);
+                        rolesAdded++;
                         
                         // Réinitialiser le pseudo
                         if (member.nickname) {
