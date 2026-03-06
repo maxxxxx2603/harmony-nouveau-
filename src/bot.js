@@ -324,6 +324,8 @@ client.on('interactionCreate', async interaction => {
                     return interaction.reply({ content: '❌ Seuls les administrateurs peuvent utiliser cette commande.', ephemeral: true });
                 }
 
+                await interaction.deferReply({ ephemeral: true });
+
                 // Annonce dans le channel d'annonce général
                 const announceChannel = await client.channels.fetch(ANNOUNCE_CHANNEL_ID);
                 const announceEmbed = new EmbedBuilder()
@@ -350,7 +352,7 @@ client.on('interactionCreate', async interaction => {
 
                 await recruitChannel.send({ content: '<@&1273007405046693889>', embeds: [recruitEmbed], components: [row] });
 
-                await interaction.reply({ content: '✅ Annonce de recrutement envoyée.', ephemeral: true });
+                await interaction.editReply({ content: '✅ Annonce de recrutement envoyée.' });
                 console.log('✅ Annonce /rc envoyée');
             } catch (error) {
                 console.error('❌ Erreur lors de l\'exécution de /rc:', error);
@@ -927,6 +929,8 @@ client.on('interactionCreate', async interaction => {
         // Slash command /custom
         if (interaction.commandName === 'custom') {
             try {
+                await interaction.deferReply({ ephemeral: false });
+
                 // Vérifier que la commande est utilisée dans la catégorie employés
                 const EMPLOYEE_CATEGORY_ID = '1424376634554716322';
                 
@@ -961,10 +965,9 @@ client.on('interactionCreate', async interaction => {
                 
                 const buttonRow = new ActionRowBuilder().addComponents(cancelButton);
 
-                await interaction.reply({
+                await interaction.editReply({
                     content: '🛠️ **Nouvelle customisation**\n\nSélectionnez le type de customisation :',
-                    components: [row, buttonRow],
-                    ephemeral: false
+                    components: [row, buttonRow]
                 });
 
                 // Initialiser la customisation
@@ -976,7 +979,9 @@ client.on('interactionCreate', async interaction => {
                 });
             } catch (error) {
                 console.error('❌ Erreur /custom:', error);
-                if (!interaction.replied) {
+                if (interaction.deferred) {
+                    await interaction.editReply({ content: '❌ Une erreur est survenue.' });
+                } else if (!interaction.replied) {
                     await interaction.reply({ content: '❌ Une erreur est survenue.', ephemeral: true });
                 }
             }
