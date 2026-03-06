@@ -328,7 +328,7 @@ client.on('interactionCreate', async interaction => {
                 const announceChannel = await client.channels.fetch(ANNOUNCE_CHANNEL_ID);
                 const announceEmbed = new EmbedBuilder()
                     .setTitle('📋 Recrutement Harmony Custom')
-                    .setDescription(`**Harmony Custom recrute !**\n\nNous recherchons des personnes motivées pour rejoindre notre équipe.\n\n📝 **Les CV se font ici:** <#${CV_REVIEW_CHANNEL_ID}>\n\nCliquez sur le bouton dans l'annonce principale pour postuler et remplir votre candidature.`)
+                    .setDescription(`**Harmony Custom recrute !**\n\nNous recherchons des personnes motivées pour rejoindre notre équipe.\n\n📝 **Les CV se font ici:** <#1462079514195791986>\n\nCliquez sur le bouton dans l'annonce principale pour postuler et remplir votre candidature.`)
                     .setColor('#00FF00')
                     .setTimestamp();
                 await announceChannel.send({ content: '<@&1273007405046693889>', embeds: [announceEmbed] });
