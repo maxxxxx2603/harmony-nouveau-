@@ -270,13 +270,9 @@ async function registerCommands() {
                         required: false
                     }
                 ]
-            },
-            {
-                name: 'byebye',
-                description: 'Réinitialiser complètement le serveur (admin only)'
             }
         ]);
-        console.log(' Commandes /rc, /kit, /total-kit, /add, /up, /virer, /custom, /facture, /reset, /payes, /remuneration, /info, /reglement, /setdata, /aideemployer, /clearaide, /update et /byebye enregistrées');
+        console.log(' Commandes /rc, /kit, /total-kit, /add, /up, /virer, /custom, /facture, /reset, /payes, /remuneration, /info, /reglement, /setdata, /aideemployer, /clearaide et /update enregistrées');
     } catch (error) {
         console.error('❌ Erreur lors de l\'enregistrement des commandes:', error);
     }
@@ -335,7 +331,7 @@ client.on('interactionCreate', async interaction => {
                     .setDescription(`**Harmony Custom recrute !**\n\nNous recherchons des personnes motivées pour rejoindre notre équipe.\n\n📝 **Les CV se font ici:** <#${CV_REVIEW_CHANNEL_ID}>\n\nCliquez sur le bouton dans l'annonce principale pour postuler et remplir votre candidature.`)
                     .setColor('#00FF00')
                     .setTimestamp();
-                await announceChannel.send({ embeds: [announceEmbed] });
+                await announceChannel.send({ content: '<@&1273007405046693889>', embeds: [announceEmbed] });
 
                 // Annonce avec bouton dans le channel de recrutement
                 const recruitChannel = await client.channels.fetch(RECRUIT_CHANNEL_ID);
@@ -352,7 +348,7 @@ client.on('interactionCreate', async interaction => {
 
                 const row = new ActionRowBuilder().addComponents(button);
 
-                await recruitChannel.send({ embeds: [recruitEmbed], components: [row] });
+                await recruitChannel.send({ content: '<@&1273007405046693889>', embeds: [recruitEmbed], components: [row] });
 
                 await interaction.reply({ content: '✅ Annonce de recrutement envoyée.', ephemeral: true });
                 console.log('✅ Annonce /rc envoyée');
@@ -1084,7 +1080,7 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.deferReply({ ephemeral: true });
 
-                const INFO_CHANNEL_ID = '1413842011060047943';
+                const INFO_CHANNEL_ID = '1462182846386016319';
                 const infoChannel = await client.channels.fetch(INFO_CHANNEL_ID);
 
                 // Créer l'embed principal
@@ -1791,101 +1787,6 @@ client.on('interactionCreate', async interaction => {
                     await interaction.editReply({ content: '❌ Une erreur est survenue.' });
                 } else if (!interaction.replied) {
                     await interaction.reply({ content: '❌ Une erreur est survenue.', ephemeral: true });
-                }
-            }
-        }
-
-        // Slash command /byebye
-        if (interaction.commandName === 'byebye') {
-            try {
-                // Permission admin uniquement
-                const isAdmin = interaction.memberPermissions && interaction.memberPermissions.has(PermissionFlagsBits.Administrator);
-                if (!isAdmin) {
-                    return interaction.reply({ content: ' Seuls les administrateurs peuvent utiliser cette commande.', ephemeral: true });
-                }
-
-                await interaction.deferReply({ ephemeral: true });
-
-                const guild = interaction.guild;
-                let membersProcessed = 0;
-                let rolesRemoved = 0;
-                let rolesAdded = 0;
-                let nicknamesReset = 0;
-                let channelsDeleted = 0;
-                let channelsCleared = 0;
-
-                await interaction.editReply({ content: ' Début de la réinitialisation du serveur...' });
-
-                // 1. Retirer tous les rôles et ajouter le rôle citoyen
-                const members = await guild.members.fetch();
-                for (const [memberId, member] of members) {
-                    try {
-                        if (member.user.bot) continue; // Ignorer les bots
-                        
-                        const rolesToRemove = member.roles.cache.filter(role => role.id !== guild.id); // Tous sauf @everyone
-                        if (rolesToRemove.size > 0) {
-                            await member.roles.remove(rolesToRemove);
-                            rolesRemoved += rolesToRemove.size;
-                        }
-                        
-                        // Ajouter le rôle citoyen à TOUS les membres
-                        await member.roles.add(CITIZEN_ROLE_ID);
-                        rolesAdded++;
-                        
-                        // Réinitialiser le pseudo
-                        if (member.nickname) {
-                            await member.setNickname(null);
-                            nicknamesReset++;
-                        }
-                        
-                        membersProcessed++;
-                    } catch (error) {
-                        console.error(`Erreur pour ${member.user.tag}:`, error);
-                    }
-                }
-
-                await interaction.editReply({ content: ` ${membersProcessed} membres traités (${rolesRemoved} rôles retirés, ${rolesAdded} rôles citoyens ajoutés, ${nicknamesReset} pseudos réinitialisés)\n Suppression des channels d'employés...` });
-
-                // 2. Supprimer tous les channels des catégories d'employés
-                const EMPLOYEE_CATEGORY_ID = '1424376634554716322';
-                const channels = await guild.channels.fetch();
-                
-                for (const [channelId, channel] of channels) {
-                    try {
-                        if (channel.parentId === EMPLOYEE_CATEGORY_ID) {
-                            await channel.delete();
-                            channelsDeleted++;
-                        }
-                    } catch (error) {
-                        console.error(`Erreur suppression channel ${channel.name}:`, error);
-                    }
-                }
-
-                await interaction.editReply({ content: ` ${membersProcessed} membres traités\n ${channelsDeleted} channels d'employés supprimés\n Nettoyage de tous les channels...` });
-
-                // 3. Nettoyage des channels - SAUTÉ
-
-                // 4. Envoyer le message de présentation dans le channel spécifique
-                const presentationChannel = await guild.channels.fetch('1468723765155205285');
-                if (presentationChannel) {
-                    const embed = new EmbedBuilder()
-                        .setTitle(' Harmony Bot')
-                        .setDescription(`Bonjour ! Je suis **Harmony**, le bot de gestion de ce serveur.\n\nLe serveur a été entièrement réinitialisé.\n\n**Contact:**\nSi vous souhaitez plus d'informations, contactez <@699589324705890334>`)
-                        .setColor('#5865F2')
-                        .setTimestamp();
-
-                    await presentationChannel.send({ content: '@everyone', embeds: [embed] });
-                }
-
-                await interaction.editReply({ content: ` **Réinitialisation terminée !**\n\n **Statistiques:**\n- ${membersProcessed} membres traités\n- ${rolesRemoved} rôles retirés\n- ${rolesAdded} rôles citoyens ajoutés\n- ${nicknamesReset} pseudos réinitialisés\n- ${channelsDeleted} channels d'employés supprimés\n- ${channelsCleared} channels nettoyés\n\n Message de présentation envoyé.` });
-                
-                console.log(' Commande /byebye exécutée - Serveur réinitialisé');
-            } catch (error) {
-                console.error(' Erreur /byebye:', error);
-                if (interaction.deferred) {
-                    await interaction.editReply({ content: ` Une erreur est survenue: ${error.message}` });
-                } else if (!interaction.replied) {
-                    await interaction.reply({ content: ' Une erreur est survenue.', ephemeral: true });
                 }
             }
         }
