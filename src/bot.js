@@ -216,6 +216,10 @@ async function registerCommands() {
                 description: 'Créer un ticket (Commande ou Contrat)'
             },
             {
+                name: 'annonce',
+                description: 'Afficher l\'annonce pour ouvrir un ticket'
+            },
+            {
                 name: 'facture',
                 description: 'Voir toutes les factures de customisation'
             },
@@ -1022,6 +1026,46 @@ client.on('interactionCreate', async interaction => {
                 console.log('✅ Menu de création de ticket affiché');
             } catch (error) {
                 console.error('❌ Erreur /ticket:', error);
+                if (interaction.deferred) {
+                    await interaction.editReply({ content: '❌ Une erreur est survenue.' });
+                } else if (!interaction.replied) {
+                    await interaction.reply({ content: '❌ Une erreur est survenue.', ephemeral: true });
+                }
+            }
+        }
+        // Slash command /annonce
+        if (interaction.commandName === 'annonce') {
+            try {
+                // Permission admin uniquement
+                const isAdmin = interaction.memberPermissions && interaction.memberPermissions.has(PermissionFlagsBits.Administrator);
+                if (!isAdmin) {
+                    return interaction.reply({ content: '❌ Seuls les administrateurs peuvent utiliser cette commande.', ephemeral: true });
+                }
+
+                await interaction.deferReply({ ephemeral: true });
+
+                const embed = new EmbedBuilder()
+                    .setTitle('🎫 Besoin d\'aide ?')
+                    .setDescription(`<@&1273007405046693889>\n\n**Ouvrir un ticket et la direction le répondra** ✅`)
+                    .setColor('#3498DB')
+                    .setTimestamp();
+
+                const button = new ButtonBuilder()
+                    .setCustomId('annonce_ticket_button')
+                    .setLabel('🎫 Ouvrir un ticket')
+                    .setStyle(ButtonStyle.Primary);
+
+                const row = new ActionRowBuilder().addComponents(button);
+
+                await interaction.channel.send({
+                    embeds: [embed],
+                    components: [row]
+                });
+
+                await interaction.editReply({ content: '✅ Annonce envoyée' });
+                console.log('✅ Annonce de ticket envoyée');
+            } catch (error) {
+                console.error('❌ Erreur /annonce:', error);
                 if (interaction.deferred) {
                     await interaction.editReply({ content: '❌ Une erreur est survenue.' });
                 } else if (!interaction.replied) {
@@ -2106,6 +2150,39 @@ client.on('interactionCreate', async interaction => {
     // Bouton pour créer un ticket Contrat (nouveaux IDs)
     if (interaction.customId === 'ticket_type_contrat') {
         await createTicket(interaction, 'Contrat', CONTRAT_CATEGORY_ID);
+    }
+
+    // Bouton depuis l'annonce
+    if (interaction.customId === 'annonce_ticket_button') {
+        try {
+            await interaction.deferReply({ ephemeral: false });
+
+            // Créer les boutons pour le choix
+            const commandButton = new ButtonBuilder()
+                .setCustomId('ticket_type_commande')
+                .setLabel('📦 Commande')
+                .setStyle(ButtonStyle.Primary);
+
+            const contratButton = new ButtonBuilder()
+                .setCustomId('ticket_type_contrat')
+                .setLabel('📋 Contrat')
+                .setStyle(ButtonStyle.Success);
+
+            const row = new ActionRowBuilder().addComponents(commandButton, contratButton);
+
+            const embed = new EmbedBuilder()
+                .setTitle('🎫 Création de Ticket')
+                .setDescription(`Choisissez le type de ticket que vous souhaitez créer :`)
+                .setColor('#3498DB')
+                .setTimestamp();
+
+            await interaction.editReply({
+                embeds: [embed],
+                components: [row]
+            });
+        } catch (error) {
+            console.error('❌ Erreur annonce_ticket_button:', error);
+        }
     }
 
     // Bouton pour fermer le ticket
