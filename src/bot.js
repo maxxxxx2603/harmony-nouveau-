@@ -216,10 +216,6 @@ async function registerCommands() {
                 description: 'Créer un ticket (Commande ou Contrat)'
             },
             {
-                name: 'annonce',
-                description: 'Afficher l\'annonce pour ouvrir un ticket'
-            },
-            {
                 name: 'facture',
                 description: 'Voir toutes les factures de customisation'
             },
@@ -280,7 +276,7 @@ async function registerCommands() {
                 ]
             }
         ]);
-        console.log(' Commandes /rc, /kit, /total-kit, /add, /up, /virer, /custom, /facture, /reset, /payes, /remuneration, /info, /reglement, /setdata, /aideemployer, /clearaide et /update enregistrées');
+        console.log(' Commandes /rc, /kit, /total-kit, /add, /up, /virer, /custom, /ticket, /facture, /reset, /payes, /remuneration, /info, /reglement, /setdata, /aideemployer, /clearaide et /update enregistrées');
     } catch (error) {
         console.error('❌ Erreur lors de l\'enregistrement des commandes:', error);
     }
@@ -997,45 +993,6 @@ client.on('interactionCreate', async interaction => {
         // Slash command /ticket
         if (interaction.commandName === 'ticket') {
             try {
-                await interaction.deferReply({ ephemeral: false });
-
-                // Créer les boutons pour le choix
-                const commandButton = new ButtonBuilder()
-                    .setCustomId('ticket_type_commande')
-                    .setLabel('📦 Commande')
-                    .setStyle(ButtonStyle.Primary);
-
-                const contratButton = new ButtonBuilder()
-                    .setCustomId('ticket_type_contrat')
-                    .setLabel('📋 Contrat')
-                    .setStyle(ButtonStyle.Success);
-
-                const row = new ActionRowBuilder().addComponents(commandButton, contratButton);
-
-                const embed = new EmbedBuilder()
-                    .setTitle('🎫 Création de Ticket')
-                    .setDescription(`<@&1273007405046693889>\n\nChoisissez le type de ticket que vous souhaitez créer :`)
-                    .setColor('#3498DB')
-                    .setTimestamp();
-
-                await interaction.editReply({
-                    embeds: [embed],
-                    components: [row]
-                });
-
-                console.log('✅ Menu de création de ticket affiché');
-            } catch (error) {
-                console.error('❌ Erreur /ticket:', error);
-                if (interaction.deferred) {
-                    await interaction.editReply({ content: '❌ Une erreur est survenue.' });
-                } else if (!interaction.replied) {
-                    await interaction.reply({ content: '❌ Une erreur est survenue.', ephemeral: true });
-                }
-            }
-        }
-        // Slash command /annonce
-        if (interaction.commandName === 'annonce') {
-            try {
                 // Permission admin uniquement
                 const isAdmin = interaction.memberPermissions && interaction.memberPermissions.has(PermissionFlagsBits.Administrator);
                 if (!isAdmin) {
@@ -1065,7 +1022,7 @@ client.on('interactionCreate', async interaction => {
                 await interaction.editReply({ content: '✅ Annonce envoyée' });
                 console.log('✅ Annonce de ticket envoyée');
             } catch (error) {
-                console.error('❌ Erreur /annonce:', error);
+                console.error('❌ Erreur /ticket:', error);
                 if (interaction.deferred) {
                     await interaction.editReply({ content: '❌ Une erreur est survenue.' });
                 } else if (!interaction.replied) {
