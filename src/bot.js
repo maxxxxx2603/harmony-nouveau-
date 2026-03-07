@@ -212,6 +212,10 @@ async function registerCommands() {
                 description: 'Déclarer une customisation (véhicule, import, GTA Online)'
             },
             {
+                name: 'ticket',
+                description: 'Créer un ticket (Commande ou Contrat)'
+            },
+            {
                 name: 'facture',
                 description: 'Voir toutes les factures de customisation'
             },
@@ -979,6 +983,45 @@ client.on('interactionCreate', async interaction => {
                 });
             } catch (error) {
                 console.error('❌ Erreur /custom:', error);
+                if (interaction.deferred) {
+                    await interaction.editReply({ content: '❌ Une erreur est survenue.' });
+                } else if (!interaction.replied) {
+                    await interaction.reply({ content: '❌ Une erreur est survenue.', ephemeral: true });
+                }
+            }
+        }
+        // Slash command /ticket
+        if (interaction.commandName === 'ticket') {
+            try {
+                await interaction.deferReply({ ephemeral: false });
+
+                // Créer les boutons pour le choix
+                const commandButton = new ButtonBuilder()
+                    .setCustomId('ticket_type_commande')
+                    .setLabel('📦 Commande')
+                    .setStyle(ButtonStyle.Primary);
+
+                const contratButton = new ButtonBuilder()
+                    .setCustomId('ticket_type_contrat')
+                    .setLabel('📋 Contrat')
+                    .setStyle(ButtonStyle.Success);
+
+                const row = new ActionRowBuilder().addComponents(commandButton, contratButton);
+
+                const embed = new EmbedBuilder()
+                    .setTitle('🎫 Création de Ticket')
+                    .setDescription(`<@&1273007405046693889>\n\nChoisissez le type de ticket que vous souhaitez créer :`)
+                    .setColor('#3498DB')
+                    .setTimestamp();
+
+                await interaction.editReply({
+                    embeds: [embed],
+                    components: [row]
+                });
+
+                console.log('✅ Menu de création de ticket affiché');
+            } catch (error) {
+                console.error('❌ Erreur /ticket:', error);
                 if (interaction.deferred) {
                     await interaction.editReply({ content: '❌ Une erreur est survenue.' });
                 } else if (!interaction.replied) {
@@ -2045,13 +2088,23 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // Bouton pour créer un ticket Commande
+    // Bouton pour créer un ticket Commande (anciens IDs)
     if (interaction.customId === 'ticket_commande') {
         await createTicket(interaction, 'Commande', COMMANDE_CATEGORY_ID);
     }
 
-    // Bouton pour créer un ticket Contrat
+    // Bouton pour créer un ticket Contrat (anciens IDs)
     if (interaction.customId === 'ticket_contrat') {
+        await createTicket(interaction, 'Contrat', CONTRAT_CATEGORY_ID);
+    }
+
+    // Bouton pour créer un ticket Commande (nouveaux IDs)
+    if (interaction.customId === 'ticket_type_commande') {
+        await createTicket(interaction, 'Commande', COMMANDE_CATEGORY_ID);
+    }
+
+    // Bouton pour créer un ticket Contrat (nouveaux IDs)
+    if (interaction.customId === 'ticket_type_contrat') {
         await createTicket(interaction, 'Contrat', CONTRAT_CATEGORY_ID);
     }
 
@@ -2412,7 +2465,7 @@ async function createTicket(interaction, type, categoryId) {
                     allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]
                 },
                 {
-                    id: STAFF_ROLE_ID,
+                    id: CITIZEN_ROLE_ID,
                     allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]
                 }
             ]
@@ -2432,7 +2485,7 @@ async function createTicket(interaction, type, categoryId) {
                     .setStyle(ButtonStyle.Danger)
             );
 
-        await channel.send({ content: `<@&${STAFF_ROLE_ID}> Nouveau ticket **${type}** créé.`, embeds: [embed], components: [row] });
+        await channel.send({ content: `<@&${CITIZEN_ROLE_ID}> Nouveau ticket **${type}** créé.`, embeds: [embed], components: [row] });
         await interaction.editReply({ content: `✅ Votre ticket a été créé : <#${channel.id}>` });
         
         console.log(`✅ Ticket ${type} créé pour ${interaction.user.tag}`);
